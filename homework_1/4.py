@@ -27,7 +27,7 @@ import nltk
 from nltk.tokenize import regexp_tokenize
 from nltk.corpus import stopwords
 from nltk import FreqDist
-import pickle
+import json
 from sklearn.metrics import confusion_matrix, accuracy_score
 import random
 
@@ -35,7 +35,7 @@ nltk.download('punkt')
 nltk.download('stopwords')
 
 filename = '/content/drive/My Drive/Colab Notebooks/data/twitter.csv'
-pklname = '/content/drive/My Drive/Colab Notebooks/data/twitter_100k.pkl'
+filename_cache = '/content/drive/My Drive/Colab Notebooks/data/twitter.json'
 nb_samples = 100000
 nb_words = 10000
 nb_classes = 2
@@ -43,19 +43,66 @@ nb_alpha = 1
 ds_from_cache = True
 
 class Dataset:
-    def __init__(self, filename):
-        self.data_x = []
-        self.data_y = []
-        self.load(filename)
-        self.clean()
-        self.calculate_bow_lr()
-        self.split()
-        self.calculate_occurrences()
-        self.calculate_likelihoods()
+    def __init__(self):
+        if ds_from_cache:
+            print('Using cached dataset...')
+            self.deserialize()
+        else:
+            print('Using new dataset...')
+            self.load(filename)
+            self.clean()
+            self.calculate_bow_lr()
+            self.split()
+            self.calculate_occurrences()
+            self.calculate_likelihoods()
+            self.serialize()
+
+    def compress_np1d(self, arr):
+        return {i: str(arr[i]) for i in range(len(arr)) if arr[i] != 0}
+
+    def decompress_np1d(self, map):
+        arr = np.zeros(nb_words, dtype=np.float32)
+        for (i, x) in map.items():
+            arr[int(i)] = float(x)
+        return arr
+
+    def serialize(self):
+        print('Serializing dataset...')
+        with open(filename_cache, 'w') as f:
+            compress_train_x = [self.compress_np1d(x) for x in self.train_x]
+            compress_test_x = [self.compress_np1d(x) for x in self.test_x]
+            ds_json = {
+                'train_x': compress_train_x,
+                'train_y': self.train_y.tolist(),
+                'test_x': compress_test_x,
+                'test_y': self.test_y.tolist(),
+                'like': self.like.tolist(),
+                'top_neg': self.top_neg,
+                'top_pos': self.top_pos,
+                'lr_min': self.lr_min,
+                'lr_max': self.lr_max
+            }
+            json.dump(ds_json, f)
+
+    def deserialize(self):
+        with open(filename_cache, 'r') as f:
+            ds_json = json.load(f)
+            self.train_x = [self.decompress_np1d(x) for x in ds_json['train_x']]
+            self.train_y = ds_json['train_y']
+            self.test_x = [self.decompress_np1d(x) for x in ds_json['test_x']]
+            self.test_y = ds_json['test_y']
+            self.like = ds_json['like']
+            self.top_neg = ds_json['top_neg']
+            self.top_pos = ds_json['top_pos']
+            self.lr_min = ds_json['lr_min']
+            self.lr_max = ds_json['lr_max']
 
     # Ucitavanje podataka
     def load(self, filename):
         print('Loading data...')
+
+        self.data_x = []
+        self.data_y = []
 
         with open(filename, 'r', encoding='latin1') as fin:
             reader = csv.reader(fin, delimiter=',')
@@ -85,22 +132,15 @@ class Dataset:
         self.data_x = self.data_x[:nb_samples]
         self.data_y = self.data_y[:nb_samples]
 
-    def update_nb_words(self):
-        global nb_words
-        nb_words = min(nb_words, len(self.vocab))
-
     # Racunanje BOW reprezentacije i LR metrike
     def calculate_bow_lr(self):
         print('Calculating BOW representation and LR metric...')
-
-        global nb_words
-
+        
         freq = FreqDist([w for x in self.data_x for w in x])
         self.vocab, _ = zip(*freq.most_common(nb_words))
-        self.update_nb_words()
         
-        self.vec_x = np.zeros((len(self.data_x), len(self.vocab)), dtype=np.float32)
-        self.lr = np.zeros(nb_words, dtype=np.float32)
+        self.vec_x = np.zeros((len(self.data_x), nb_words), dtype=np.float32)
+        lr = np.zeros(nb_words, dtype=np.float32)
 
         for j, w in enumerate(self.vocab):
             neg = 0
@@ -113,9 +153,37 @@ class Dataset:
                 else:
                     pos += cnt
             if pos >= 10 and neg >= 10:
-                self.lr[j] = pos / neg
+                lr[j] = pos / neg
             if j % 100 == 0:
                 print('[calculate_bow_lr] Word: {}/{}'.format(j, nb_words))
+
+        # Pronalazenje pet najcesce koriscenih reci u negativnim tvitovima
+        freq_neg = FreqDist([w for i, x in enumerate(self.data_x) for w in x if self.data_y[i] == 0])
+        self.top_neg, _ = zip(*freq_neg.most_common(5))
+
+        # Pronalazenje pet najcesce koriscenih reci u pozitivnim tvitovima
+        freq_pos = FreqDist([w for i, x in enumerate(self.data_x) for w in x if self.data_y[i] == 1])
+        self.top_pos, _ = zip(*freq_pos.most_common(5))
+
+        # Pronalazenje pet reci sa najmanjom vrednoscu LR metrike
+        self.lr_min = []
+        min_cnt = 1
+        for i in lr.argsort():
+            if min_cnt > 5:
+                break
+            if lr[i] > 0:
+                self.lr_min.append(self.vocab[i])
+                min_cnt += 1
+
+        # Pronalazenje pet reci sa najvecom vrednoscu LR metrike
+        self.lr_max = []
+        max_cnt = 1
+        for i in (-lr).argsort():
+            if max_cnt > 5:
+                break
+            if lr[i] > 0:
+                self.lr_max.append(self.vocab[i])
+                max_cnt += 1
 
     # Deljenje podataka na skup za treniranje i testiranje
     def split(self):
@@ -130,9 +198,6 @@ class Dataset:
     # Racunanje broja pojavljivanja svake reci u svakoj klasi
     def calculate_occurrences(self):
         print('Calculating every word occurrence for every class...')
-
-        global nb_words, nb_classes
-        
         self.occs = np.zeros((nb_classes, nb_words), dtype=np.float32)
         for i, y in enumerate(self.train_y):
             for w in range(nb_words):
@@ -143,9 +208,6 @@ class Dataset:
     # Racunanje P(rec|klasa)
     def calculate_likelihoods(self):
         print('Calculating P(word|class)...')
-
-        global nb_words, nb_classes, nb_alpha
-
         self.like = np.zeros((nb_classes, nb_words), dtype=np.float32)
         for c in range(nb_classes):
             for w in range(nb_words):
@@ -155,17 +217,7 @@ class Dataset:
                 if w % 1000 == 0:
                     print('[calculate_likelihoods] Word: {}/{}'.format(w, nb_words))
 
-if ds_from_cache:
-    with open(pklname, 'rb') as pkl:
-        print('Using cached dataset...')
-        ds = pickle.load(pkl)
-        ds.update_nb_words()
-else:
-    with open(pklname, 'wb') as pkl:
-        print('Using new dataset...')
-        ds = Dataset(filename)
-        print('Serializing new dataset...')
-        pickle.dump(ds, pkl, pickle.HIGHEST_PROTOCOL)
+ds = Dataset()    
 
 # Racunanje P(klasa|test)
 print('Calculating P(class|test)...')
@@ -173,6 +225,7 @@ hyps = []
 acts = []
 priors = np.bincount(ds.train_y) / nb_samples
 class_trans = {'Negative': 0, 'Positive': 1, 0: 'Negative', 1: 'Positive'}
+nb_test = len(ds.test_x)
 for i, x in enumerate(ds.test_x):
     probs = np.zeros(nb_classes)
     for c in range(nb_classes):
@@ -187,12 +240,12 @@ for i, x in enumerate(ds.test_x):
     acts.append(class_trans[act_val])
     if i % 100 == 0:
         print('{}/{} Predicted: {} Actual: {} Match: {}'
-        .format(i+1, ds.nb_test, class_trans[hyp_val], class_trans[act_val], match))
+        .format(i+1, nb_test, class_trans[hyp_val], class_trans[act_val], match))
 
 # Racunanje tacnosti modela
 cm = confusion_matrix(acts, hyps)
 tn, _, _, tp = cm.ravel()
-acc = (tn + tp) / ds.nb_test
+acc = (tn + tp) / nb_test
 print('Accuracy:', acc)
 
 # Prikazivanje matrice konfuzije
@@ -202,34 +255,8 @@ plt.xlabel('Hypothesis')
 plt.ylabel('Actual')
 plt.show()
 
-# Pronalazenje pet najcesce koriscenih reci u negativnim tvitovima
-freq_neg = FreqDist([w for i, x in enumerate(ds.data_x) for w in x if ds.data_y[i] == 0])
-top_neg, _ = zip(*freq_neg.most_common(5))
-print('Top negative:', top_neg)
+print('Top negative:', ds.top_neg)
+print('Top positive:', ds.top_pos)
 
-# Pronalazenje pet najcesce koriscenih reci u pozitivnim tvitovima
-freq_pos = FreqDist([w for i, x in enumerate(ds.data_x) for w in x if ds.data_y[i] == 1])
-top_pos, _ = zip(*freq_pos.most_common(5))
-print('Top positive:', top_pos)
-
-# Pronalazenje pet reci sa najmanjom vrednoscu LR metrike
-lr_min = []
-min_cnt = 1
-for i in ds.lr.argsort():
-    if min_cnt > 5:
-        break
-    if ds.lr[i] > 0:
-        lr_min.append(i)
-        min_cnt += 1
-print('LR lowest:', [ds.vocab[x] for x in lr_min])
-
-# Pronalazenje pet reci sa najvecom vrednoscu LR metrike
-lr_max = []
-max_cnt = 1
-for i in (-ds.lr).argsort():
-    if max_cnt > 5:
-        break
-    if ds.lr[i] > 0:
-        lr_max.append(i)
-        max_cnt += 1
-print('LR highest:', [ds.vocab[x] for x in lr_max])
+print('LR lowest:', ds.lr_min)
+print('LR highest:', ds.lr_max)
