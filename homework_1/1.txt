@@ -1,0 +1,48 @@
+# ODGOVOR 1A
+#
+# Razlika između K-fold i Leave one out:
+# Leave one out je specijalan slučaj K-fold algoritma u kome se
+# model testira na jednom objektu, dok se za treniranje koriste svi ostali.
+# Konkretno, za Leave one out algoritam K ima vrednost N,
+# gde je N ukupan broj objekata.
+#
+# Razlika između K-fold i Random subsampling:
+# Kod Random subsampling algoritma ne dolazi do mešanja skupova
+# za treniranje i testiranje, dok se kod K-fold algoritma
+# jedan podskup objekata koristi kao skup za treniranje K-1 puta,
+# a kao skup za testiranje tačno jednom.
+#
+# Razlika između Leave one out i Random subsampling:
+# Kod Leave one out algoritma model se testira na svakom objektu,
+# dok se kod Random subsampling algoritma
+# model testira samo na jednom podskupu objekata.
+#
+#
+# ODGOVOR 1B
+#
+# Gaussian Naive Bayes:
+# Obeležja po kojima se klasifikuju objekti su binarne prirode,
+# tj. vrednost odeležja može biti TRUE ili FALSE.
+#
+# Multinomial Naive Bayes:
+# Obeležja po kojima se klasifikuju objekti su diskretne prirode,
+# tj. vrednost odeležja može biti ceo broj koji predstavlja
+# frekvenciju pojavljivanja objekta sa tim obeležjem.
+#
+# Bernoulli Naive Bayes:
+# Obeležja po kojima se klasifikuju objekti su kontinualne prirode,
+# tj. vrednost odeležja može biti realan broj
+# iz normalne raspodele obeležja po svim objektima.
+#
+#
+# ODGOVOR 1C
+#
+# Linear separability:
+# Dva skupa su linearno separabilna ako postoji prava
+# koja deli dve klase objekata tako što se objekti prve i druge klase
+# nalaze sa suprotnih strana te prave.
+# Nakon plotovanja objekata iz skupa podataka iris.csv,
+# može se primetiti linearna separabilnost zato što postoji beskonačno mnogo
+# pravih koje razdvajaju objekte klase Setosa od unije
+# objekata klasa Versicolor i Virginica.
+# Ovo važi ako posmatramo obeležja sepal_width i sepal_length.
