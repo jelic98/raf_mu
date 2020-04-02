@@ -29,8 +29,9 @@ data['y'] = data['y'][indices]
 min_x, max_x = min(data['x']), max(data['x'])
 min_y, max_y = min(data['y']), max(data['y'])
 
-ax_deg = []
-ax_loss = []
+data_loss = []
+
+nb_epochs = 100
 
 plt.figure(figsize=(16, 8))
 plt.subplot(1, 2, 1)
@@ -38,6 +39,8 @@ plt.subplot(1, 2, 1)
 for nb_features in range(nb_features_min, nb_features_max+1):
     data_x = data['x'][:]
     data_y = data['y'][:]
+
+    data_loss.append([])
 
     tf.reset_default_graph()
 
@@ -69,7 +72,6 @@ for nb_features in range(nb_features_min, nb_features_max+1):
         sess.run(tf.global_variables_initializer())
 
         # Trening
-        nb_epochs = 100
         for epoch in range(nb_epochs):
             epoch_loss = 0
             for sample in range(nb_samples):
@@ -78,6 +80,7 @@ for nb_features in range(nb_features_min, nb_features_max+1):
                 _, curr_loss = sess.run([opt_op, mse], feed_dict=feed)
                 epoch_loss += curr_loss
             epoch_loss /= nb_samples
+            data_loss[nb_features-1].append(epoch_loss)
             if epoch % 10 == 0:
                 print('{}/{} : {:.5f}'.format(epoch+1, nb_epochs, epoch_loss))
  
@@ -91,11 +94,7 @@ for nb_features in range(nb_features_min, nb_features_max+1):
         xs = create_feature_matrix(np.linspace(min_x, max_x, 100), nb_features)
         hyp_val = sess.run(hyp, feed_dict={X: xs})
         stage = nb_features / nb_features_max
-        plt.plot(xs[:,0].tolist(), hyp_val.tolist(),
-                 color=(1 - stage, stage, 0))
-
-        ax_deg.append(nb_features)
-        ax_loss.append(loss_val)
+        plt.plot(xs[:,0].tolist(), hyp_val.tolist(), color=(1-stage, stage, 0))
 
 # Grafik koji prikazuje ulazne podatke
 plt.scatter(data['x'], data['y'])
@@ -104,7 +103,9 @@ plt.ylim([min_y, max_y])
 
 # Grafik koji prikazuje zavisnost funkcije troska od stepena polinoma
 plt.subplot(1, 2, 2)
-plt.plot(ax_deg, ax_loss)
+for nb_features in range(nb_features_min, nb_features_max+1):
+    stage = nb_features / nb_features_max
+    plt.plot(range(1, nb_epochs+1), data_loss[nb_features-1], color=(1-stage, stage, 0))
 plt.show()
 
 # ODGOVOR 2A
@@ -113,4 +114,7 @@ plt.show()
 # kod polinoma petog i šestog stepena. To je zato što usled nasumičnog
 # mešanja skupa ulaznih podataka funkcija koja optimalno opisuje
 # te podatke i funkcija u obliku polinoma visokog stepena
-# prilaze asimptotama sa suprotnih strana.
+# prilaze asimptotama sa suprotnih strana usled
+# korigovanja koeficijenata polinoma.
+# Ovoaj slučaj se obično pojavljuje kada je stopa obučavanja velika.
+# Potencijalno rešenje jeste da se stopa obučavanja vremenom smanjuje.

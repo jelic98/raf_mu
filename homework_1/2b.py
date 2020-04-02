@@ -32,8 +32,9 @@ max_x = max(data['x'])
 min_y = min(data['y'])
 max_y = max(data['y'])
 
-ax_lmbd = []
-ax_loss = []
+data_loss = []
+
+nb_epochs = 100
 
 plt.figure(figsize=(16, 8))
 plt.subplot(1, 2, 1)
@@ -43,6 +44,8 @@ lmbds = [0, 0.001, 0.01, 0.1, 1, 10, 100]
 for i, lmbd in enumerate(lmbds):
     data_x = data['x'][:]
     data_y = data['y'][:]
+
+    data_loss.append([])
 
     tf.reset_default_graph()
 
@@ -86,7 +89,6 @@ for i, lmbd in enumerate(lmbds):
         sess.run(tf.global_variables_initializer())
 
         # Trening
-        nb_epochs = 100
         for epoch in range(nb_epochs):
             epoch_loss = 0
             for sample in range(nb_samples):
@@ -94,6 +96,7 @@ for i, lmbd in enumerate(lmbds):
                 _, curr_loss = sess.run([opt_op, loss], feed_dict=feed)
                 epoch_loss += curr_loss
             epoch_loss /= nb_samples
+            data_loss[i].append(epoch_loss)
             if epoch % 10 == 0:
                 print('{}/{} : {:.5f}'.format(epoch+1, nb_epochs, epoch_loss))
  
@@ -107,10 +110,7 @@ for i, lmbd in enumerate(lmbds):
         xs = create_feature_matrix(np.linspace(min_x, max_x, 100), nb_features)
         hyp_val = sess.run(hyp, feed_dict={X: xs})
         stage = i / len(lmbds)
-        plt.plot(xs[:,0].tolist(), hyp_val.tolist(), color=(1 - stage, stage, 0))
-
-        ax_lmbd.append(lmbd)
-        ax_loss.append(loss_val)
+        plt.plot(xs[:,0].tolist(), hyp_val.tolist(), color=(1-stage, stage, 0))
 
 # Grafik koji prikazuje ulazne podatke
 plt.scatter(data['x'], data['y'])
@@ -119,7 +119,9 @@ plt.ylim([min_y, max_y])
 
 # Grafik koji prikazuje zavisnost funkcije troska od stepena polinoma
 plt.subplot(1, 2, 2)
-plt.plot(ax_lmbd, ax_loss)
+for i, lmbd in enumerate(lmbds):
+    stage = i / len(lmbds)
+    plt.plot(range(1, nb_epochs+1), data_loss[i], color=(1-stage, stage, 0))
 plt.show()
 
 # ODGOVOR 2B
