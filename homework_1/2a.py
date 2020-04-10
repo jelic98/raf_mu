@@ -116,5 +116,5 @@ plt.show()
 # te podatke i funkcija u obliku polinoma visokog stepena
 # prilaze asimptotama sa suprotnih strana usled
 # korigovanja koeficijenata polinoma.
-# Ovoaj slučaj se obično pojavljuje kada je stopa obučavanja velika.
+# Ovaj slučaj se obično pojavljuje kada je stopa obučavanja velika.
 # Potencijalno rešenje jeste da se stopa obučavanja vremenom smanjuje.
