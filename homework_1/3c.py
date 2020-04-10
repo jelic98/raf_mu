@@ -13,8 +13,7 @@ class_trans = {'B': 0, 'M': 1, 0: 'B', 1: 'M'}
 
 # Ucitavanje podataka
 filename = 'data/Prostate_Cancer.csv'
-cols = range(1, 10)
-all_data = np.genfromtxt(filename, dtype='str', delimiter=',', skip_header=1, usecols=cols)
+all_data = np.genfromtxt(filename, dtype='str', delimiter=',', skip_header=1, usecols=range(1, 10))
 
 # Nasumicno mesanje podataka
 nb_samples = all_data.shape[0]
@@ -24,8 +23,7 @@ all_data = all_data[indices]
 # Konvertovanje podataka u brojeve
 for row in all_data:
     row[0] = class_trans[row[0]]
-all_data = [[x if isinstance(x, float) else 0 for x in row] for row in all_data]
-all_data = [[float(x) for x in row] for row in all_data]
+all_data = [[0 if x == 'NA' else float(x) for x in row] for row in all_data]
 
 # Deljenje podataka na skup za treniranje i testiranje
 train, test = np.split(all_data, [int(len(all_data)*0.8)])
@@ -59,7 +57,7 @@ for k in range(k_min, k_max+1):
     _, idxs = tf.nn.top_k(-dists, k)
     classes = tf.gather(Y, idxs)
     dists = tf.gather(dists, idxs)
-    w = 1 / dists
+    w = tf.fill([k], 1/k)
 
     # Odabir klase na osnovu frekvencije u skupu najblizih objekata
     w_col = tf.reshape(w, (k, 1))
@@ -95,10 +93,10 @@ plt.plot(ax_k, ax_acc)
 plt.show()
 
 # ODGOVOR 3C
-# Na grafiku se može videti horizontalna linija koja pokazuje
-# da je tačnost modela 100%, nezavisno od vrednosti parametra K.
-# Ovo pojava se dešava kada su klase dobro grupisane.
-# Ipak, tvrđenje iz prethodog dela zadatka ostaje da važi
+# Sudeći po grafiku, može se zaključiti da model koji uzima
+# u obzir više obeležja ima veću tačnost zato što su objekti
+# više razdvojeni u više dimenzija.
+# Tvrđenje iz prethodog dela zadatka ostaje da važi
 # zato što bi se povećanjem vrednosti parametra K u jednom trenutku
 # primetilo opadanje tačnosti modela zato što bi veličina klase bila manja
 # od broja susednih objekata koje uzimamo u obzir pri određivanju

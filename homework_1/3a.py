@@ -11,7 +11,7 @@ class_trans = {'B': 0, 'M': 1, 0: 'B', 1: 'M'}
 
 # Ucitavanje podataka
 filename = 'data/Prostate_Cancer.csv'
-all_data = np.genfromtxt(filename, dtype='str', delimiter=',', skip_header=1, usecols=[1, 2, 3, 4, 5])
+all_data = np.genfromtxt(filename, dtype='str', delimiter=',', skip_header=1, usecols=range(1, 6))
 
 # Nasumicno mesanje podataka
 nb_samples = all_data.shape[0]
@@ -21,7 +21,7 @@ all_data = all_data[indices]
 # Konvertovanje podataka u brojeve
 for row in all_data:
     row[0] = class_trans[row[0]]
-all_data = [[float(x) for x in row] for row in all_data]
+all_data = [[0 if x == 'NA' else float(x) for x in row] for row in all_data]
 
 # Deljenje podataka na skup za treniranje i testiranje
 train, test = np.split(all_data, [int(len(all_data)*0.8)])
@@ -51,7 +51,7 @@ dists = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(X, Q)), axis=1))
 _, idxs = tf.nn.top_k(-dists, k)
 classes = tf.gather(Y, idxs)
 dists = tf.gather(dists, idxs)
-w = 1 / dists
+w = tf.fill([k], 1/k)
 
 # Odabir klase na osnovu frekvencije u skupu najblizih objekata
 w_col = tf.reshape(w, (k, 1))
