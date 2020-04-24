@@ -20,7 +20,7 @@
 #
 # ODGOVOR 1B
 #
-# Gaussian Naive Bayes:
+# Bernoulli Naive Bayes:
 # Obeležja po kojima se klasifikuju objekti su binarne prirode,
 # tj. vrednost odeležja može biti TRUE ili FALSE.
 #
@@ -29,7 +29,7 @@
 # tj. vrednost odeležja može biti ceo broj koji predstavlja
 # frekvenciju pojavljivanja objekta sa tim obeležjem.
 #
-# Bernoulli Naive Bayes:
+# Gaussian Naive Bayes:
 # Obeležja po kojima se klasifikuju objekti su kontinualne prirode,
 # tj. vrednost odeležja može biti realan broj
 # iz normalne raspodele obeležja po svim objektima.
