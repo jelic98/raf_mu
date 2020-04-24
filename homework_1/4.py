@@ -98,7 +98,7 @@ class Dataset:
 
         self.data_x = [html.unescape(x) for x in self.data_x]
 
-        self.data_x = [re.sub(r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', '', x) for x in self.data_x]
+        self.data_x = [re.sub(r'https?://\S+', '', x) for x in self.data_x]
         self.data_x = [re.sub(r'[^\w\s]|\d+', '', x) for x in self.data_x]
         self.data_x = [re.sub(r'\s\s+', ' ', x) for x in self.data_x]
         self.data_x = [x.strip().lower() for x in self.data_x]
