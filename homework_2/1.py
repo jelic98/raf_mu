@@ -126,7 +126,7 @@ with tf.Session() as sess:
     # Prikazivanje predikcija
     plt.figure(figsize=(16,4))
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=nb_test//20))
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=nb_test//16))
     plt.plot(dates[nb_train:], test_y, '-b', label='Actual')
     plt.plot(dates[nb_train:], test_pred, '--r', label='Predicted')
     plt.gcf().autofmt_xdate()
