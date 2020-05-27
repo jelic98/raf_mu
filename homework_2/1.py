@@ -70,8 +70,7 @@ Y = tf.placeholder(tf.float32, [None, window_size])
 L = tf.placeholder(tf.float32, None)
 
 # LSTM sloj
-lstm = [tf.contrib.rnn.LSTMCell(lstm_size, state_is_tuple=True)]
-rnn = tf.contrib.rnn.MultiRNNCell(lstm, state_is_tuple=True)
+rnn = tf.contrib.rnn.MultiRNNCell([tf.contrib.rnn.LSTMCell(lstm_size)])
 
 # Izlaz LSTM sloja
 val, _ = tf.nn.dynamic_rnn(rnn, X, dtype=tf.float32)
