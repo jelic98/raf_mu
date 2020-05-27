@@ -108,8 +108,7 @@ stack_embeds = tf.nn.embedding_lookup(embed_matrix, stack_symbols)
 inputs = tf.concat([X, stack_embeds], axis=2)
 
 # LSTM sloj
-lstm = [tf.contrib.rnn.LSTMCell(lstm_size, state_is_tuple=True)]
-rnn = tf.contrib.rnn.MultiRNNCell(lstm, state_is_tuple=True)
+rnn = tf.contrib.rnn.MultiRNNCell([tf.contrib.rnn.LSTMCell(lstm_size)])
 
 # Izlaz LSTM sloja
 val, _ = tf.nn.dynamic_rnn(rnn, inputs, dtype=tf.float32)
